@@ -51,7 +51,7 @@ pub fn solve(input: &str) -> Option<(usize, usize)> {
     }
     assert_eq!(num_rows * num_rows, counter); // Is square
     let in_bounds = |dest: Point2D| dest.row < num_rows && dest.col < num_rows;
-    for (_k, vec) in map.iter() {
+    for (_k, vec) in map.iter().filter(|(_, vec)| vec.len() > 1) {
         for (i, val1) in vec.iter().copied().enumerate() {
             targets2.insert(val1);
             for (j, val2) in vec.iter().copied().enumerate() {
