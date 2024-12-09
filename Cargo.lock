@@ -7,6 +7,7 @@ name = "advent2024"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "benchmarking",
  "itertools",
  "regex",
 ]
@@ -25,6 +26,12 @@ name = "anyhow"
 version = "1.0.93"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4c95c10ba0b00a02636238b814946408b1322d5ac4760326e6fb8ec956d85775"
+
+[[package]]
+name = "benchmarking"
+version = "0.4.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c335a9de639ba6a3e4107fe7763c9dcd4eb9422575f1191c2b8f2009f03fe4a"
 
 [[package]]
 name = "either"
