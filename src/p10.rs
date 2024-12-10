@@ -11,16 +11,17 @@ impl SquareGrid {
     fn score(&self, idx: usize) -> (usize, usize) {
         let mut buffer = Vec::new();
         let position = (idx / self.length, idx % self.length);
-        let num_trails = self.dfs(1, position, &mut buffer);
+        self.dfs(1, position, &mut buffer);
+        let part2 = buffer.len();
         // Achieve set-like behavior
         buffer.sort();
         buffer.dedup();
-        (buffer.len(), num_trails)
+        let part1 = buffer.len();
+        (part1, part2)
     }
-    fn dfs(&self, goal: u8, position: (usize, usize), data: &mut Vec<(usize, usize)>) -> usize {
+    fn dfs(&self, goal: u8, position: (usize, usize), data: &mut Vec<(usize, usize)>) {
         if goal == 10 {
             data.push(position); // Already checked correctness in previous parent function call
-            return 1;
         }
         let (row, col) = position;
         let neighbors = [
@@ -29,16 +30,14 @@ impl SquareGrid {
             (row + 1, col),
             (row, col - 1),
         ];
-        let mut num_trails = 0;
         for n in neighbors {
             let (row, col) = n;
             if let Some(sq) = self.get(row, col) {
                 if sq == goal {
-                    num_trails += self.dfs(goal + 1, n, data);
+                    self.dfs(goal + 1, n, data);
                 }
             }
         }
-        return num_trails;
     }
     fn get(&self, row: usize, col: usize) -> Option<u8> {
         if row >= self.length || col >= self.length {
