@@ -1,27 +1,10 @@
+use super::Direction;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Marker {
     Empty,
     Obstacle,
     Visited,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum Direction {
-    North,
-    East,
-    South,
-    West,
-}
-
-impl Direction {
-    fn turn(self) -> Self {
-        match self {
-            Direction::North => Direction::East,
-            Direction::East => Direction::South,
-            Direction::South => Direction::West,
-            Direction::West => Direction::North,
-        }
-    }
 }
 
 enum Status {

@@ -26,14 +26,6 @@ pub enum Direction {
 }
 
 impl Direction {
-    fn all_directions() -> [Self; 4] {
-        [
-            Direction::North,
-            Direction::East,
-            Direction::South,
-            Direction::West,
-        ]
-    }
     fn orthogonal(origin: (usize, usize)) -> [(usize, usize); 4] {
         [
             Direction::North.get_square(origin),
@@ -57,6 +49,12 @@ impl Direction {
             Direction::East => Direction::South,
             Direction::South => Direction::West,
             Direction::West => Direction::North,
+        }
+    }
+    fn get_perp(self) -> (Self, Self) {
+        match self {
+            Direction::East | Direction::West => (Direction::North, Direction::South),
+            _ => (Direction::East, Direction::West),
         }
     }
 }

@@ -1,3 +1,4 @@
+use super::Direction;
 use std::collections::{BinaryHeap, HashSet};
 
 #[derive(Debug, Clone, Copy)]
@@ -5,34 +6,6 @@ enum Tile {
     Empty,
     Wall,
     Goal,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq)]
-enum Direction {
-    North = 0,
-    East,
-    South,
-    West,
-}
-
-impl Direction {
-    fn get_square(self, origin: (usize, usize)) -> (usize, usize) {
-        let (row, col) = origin;
-        match self {
-            Direction::North => (row - 1, col),
-            Direction::East => (row, col + 1),
-            Direction::South => (row + 1, col),
-            Direction::West => (row, col - 1),
-        }
-    }
-    fn turn(self) -> Self {
-        match self {
-            Direction::North => Direction::East,
-            Direction::East => Direction::South,
-            Direction::South => Direction::West,
-            Direction::West => Direction::North,
-        }
-    }
 }
 
 #[derive(PartialEq, Clone, Copy, Eq, PartialOrd, Ord, Debug)]

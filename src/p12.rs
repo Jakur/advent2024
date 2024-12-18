@@ -1,30 +1,5 @@
+use super::Direction;
 use std::collections::{HashMap, HashSet};
-
-#[derive(Debug, Clone, Copy)]
-enum Direction {
-    North = 0,
-    East,
-    South,
-    West,
-}
-
-impl Direction {
-    fn get_square(self, origin: (usize, usize)) -> (usize, usize) {
-        let (row, col) = origin;
-        match self {
-            Direction::North => (row - 1, col),
-            Direction::East => (row, col + 1),
-            Direction::South => (row + 1, col),
-            Direction::West => (row, col - 1),
-        }
-    }
-    fn get_perp(self) -> (Self, Self) {
-        match self {
-            Direction::East | Direction::West => (Direction::North, Direction::South),
-            _ => (Direction::East, Direction::West),
-        }
-    }
-}
 
 type Fences = [bool; 4];
 

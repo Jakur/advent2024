@@ -1,3 +1,4 @@
+use super::Direction;
 use itertools::Itertools;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -16,26 +17,6 @@ impl Tile {
             Direction::East
         } else {
             Direction::West
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-enum Direction {
-    North,
-    East,
-    South,
-    West,
-}
-
-impl Direction {
-    fn get_square(self, origin: (usize, usize)) -> (usize, usize) {
-        let (row, col) = origin;
-        match self {
-            Direction::North => (row - 1, col),
-            Direction::East => (row, col + 1),
-            Direction::South => (row + 1, col),
-            Direction::West => (row, col - 1),
         }
     }
 }
