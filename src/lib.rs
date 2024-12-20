@@ -10,6 +10,7 @@ pub mod p17;
 pub mod p18;
 pub mod p19;
 pub mod p2;
+pub mod p20;
 pub mod p3;
 pub mod p4;
 pub mod p5;
@@ -27,6 +28,14 @@ pub enum Direction {
 }
 
 impl Direction {
+    fn wide_orthongonal(origin: (usize, usize)) -> [(usize, usize); 4] {
+        [
+            Direction::North.get_square(Direction::North.get_square(origin)),
+            Direction::East.get_square(Direction::East.get_square(origin)),
+            Direction::South.get_square(Direction::South.get_square(origin)),
+            Direction::West.get_square(Direction::West.get_square(origin)),
+        ]
+    }
     fn orthogonal(origin: (usize, usize)) -> [(usize, usize); 4] {
         [
             Direction::North.get_square(origin),
