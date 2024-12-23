@@ -41,7 +41,6 @@ impl std::fmt::Debug for PadVal {
 
 #[derive(Debug)]
 struct NumPad {
-    data: [[u8; 3]; 4],
     lookup: [(usize, usize); 11],
     location: u8,
     parent: DirPad,
@@ -60,26 +59,22 @@ impl NumPad {
             }
         }
         Self {
-            data,
             lookup: lookup,
             location: 10,
             parent,
         }
     }
     fn next_number(&mut self, goal: u8) -> u64 {
-        // dbg!(goal);
         let paths = self.iterate_paths(self.location, goal);
-        let mut best_cost = usize::MAX;
-        // dbg!(paths.len());
+        let mut best_cost = u64::MAX;
         for path in paths {
             let p = self.parent.walk(path);
             if p.absolute_path.len() < best_cost {
                 best_cost = p.absolute_path.len();
-                // dbg!(&p);
             }
         }
         self.location = goal;
-        best_cost as u64
+        best_cost
     }
     fn reset(&mut self) {
         self.location = 10;
@@ -110,14 +105,14 @@ impl CacheKey {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 struct CacheState {
     data: Vec<PadVal>,
-    absolute_path: Vec<PadVal>,
+    absolute_path: CompressedPath,
 }
 
 impl CacheState {
-    fn from_vec(vec: Vec<PadVal>, absolute_path: Vec<PadVal>) -> Self {
+    fn from_vec(vec: Vec<PadVal>, absolute_path: CompressedPath) -> Self {
         Self {
             data: vec,
             absolute_path,
@@ -133,19 +128,43 @@ impl std::fmt::Debug for CacheState {
         }
         writeln!(f)?;
         write!(f, "Absolute Path: ")?;
-        for d in self.absolute_path.iter() {
-            write!(f, "{:?}", *d)?;
+        for (k, v) in self.absolute_path.data.iter() {
+            write!(f, "{:?} : {:?}", *k, *v)?;
         }
         writeln!(f)
     }
 }
 
-impl std::default::Default for CacheState {
-    fn default() -> Self {
-        Self {
-            data: Vec::new(),
-            absolute_path: Vec::new(),
+#[derive(Default, Clone)]
+struct CompressedPath {
+    data: HashMap<Vec<PadVal>, u64>,
+}
+
+impl CompressedPath {
+    fn len(&self) -> u64 {
+        let mut sum = 0;
+        for (k, v) in self.data.iter() {
+            sum += k.len() as u64 * *v;
         }
+        sum
+    }
+    fn extend(&mut self, other: Self) {
+        for (k, v) in other.data {
+            *self.data.entry(k).or_default() += v;
+        }
+    }
+}
+
+impl From<Vec<PadVal>> for CompressedPath {
+    fn from(value: Vec<PadVal>) -> Self {
+        // Check that is it just one path
+        assert_eq!(value.last(), Some(&PadVal::A));
+        let head = &value[0..value.len() - 1];
+        assert!(head.iter().find(|&&x| x == PadVal::A).is_none());
+        // All good, insert it
+        let mut data = HashMap::new();
+        data.insert(value, 1);
+        Self { data }
     }
 }
 
@@ -160,7 +179,7 @@ trait KeyPad {
         let len = steps.len();
         let mut out = Vec::new();
         'outer: for mut perm in steps.into_iter().permutations(len) {
-            // Check bounds
+            // Check bounds by walking the whole path
             let mut next = st;
             for s in perm.iter() {
                 next = s.step(next);
@@ -168,7 +187,7 @@ trait KeyPad {
                     continue 'outer;
                 }
             }
-            perm.push(PadVal::A); // Always ends with A?
+            perm.push(PadVal::A); // Always ends with A
             out.push(perm);
         }
         out
@@ -212,10 +231,8 @@ fn get_steps(st: (usize, usize), end: (usize, usize)) -> Vec<PadVal> {
     }
     steps
 }
-
 #[derive(Debug, Clone)]
 struct DirPad {
-    data: [[PadVal; 3]; 2],
     lookup: [(usize, usize); 6],
     cache: HashMap<CacheKey, CacheState>,
     location: PadVal,
@@ -236,7 +253,6 @@ impl DirPad {
             }
         }
         Self {
-            data,
             lookup,
             cache: HashMap::new(),
             location: PadVal::A,
@@ -245,10 +261,10 @@ impl DirPad {
     }
     fn walk(&mut self, vec: Vec<PadVal>) -> CacheState {
         let mut state = self.location;
-        let mut absolute = Vec::new();
+        let mut absolute = CompressedPath::default();
         for val in vec.iter().copied() {
             let path = self.get_path(state, val);
-            absolute.extend(path.absolute_path.iter().copied());
+            absolute.extend(path.absolute_path.clone());
             state = val;
         }
         assert_eq!(state, PadVal::A);
@@ -257,17 +273,16 @@ impl DirPad {
     fn get_path(&mut self, st: PadVal, end: PadVal) -> &CacheState {
         let key = CacheKey::new(st, end);
         if st == end {
-            return self
-                .cache
-                .entry(key)
-                .or_insert_with(|| CacheState::from_vec(vec![PadVal::A], vec![PadVal::A]));
+            return self.cache.entry(key).or_insert_with(|| {
+                CacheState::from_vec(vec![PadVal::A], CompressedPath::from(vec![PadVal::A]))
+            });
         }
         if self.cache.contains_key(&key) {
             return self.cache.get(&key).unwrap();
         }
         let all_paths = self.iterate_paths(st, end);
         let mut best_path = CacheState::default();
-        let mut min_cost = usize::MAX;
+        let mut min_cost = u64::MAX;
         for path in all_paths {
             if let Some(parent) = self.parent.as_mut() {
                 let check = parent.walk(path);
@@ -276,9 +291,9 @@ impl DirPad {
                     best_path = check;
                 }
             } else {
-                if path.len() < min_cost {
-                    min_cost = path.len();
-                    best_path = CacheState::from_vec(path.clone(), path);
+                if (path.len() as u64) < min_cost {
+                    min_cost = path.len() as u64;
+                    best_path = CacheState::from_vec(path.clone(), CompressedPath::from(path));
                 }
             }
         }
@@ -294,9 +309,9 @@ fn build_numpad(depth: usize) -> NumPad {
     NumPad::new(root)
 }
 
-pub fn solve(input: &str) -> Option<(u64, u64)> {
-    let mut numpad = build_numpad(2);
-    let mut part1 = 0;
+fn depth_solve(input: &str, depth: usize) -> Option<u64> {
+    let mut numpad = build_numpad(depth);
+    let mut ans = 0;
     for line in input.lines() {
         let seq = line.chars().map(|x| x.to_digit(16).unwrap() as u8);
         let numeric: String = line.chars().filter(|x| x.is_ascii_digit()).collect();
@@ -305,15 +320,14 @@ pub fn solve(input: &str) -> Option<(u64, u64)> {
         for dest in seq {
             cost += numpad.next_number(dest);
         }
-        dbg!(cost);
-        part1 += cost * numeric_num;
+        ans += cost * numeric_num;
         numpad.reset();
     }
-    dbg!(&numpad.parent.cache.len());
-    dbg!(&numpad.parent.cache);
-    // dbg!(&numpad.parent.parent.unwrap().parent.unwrap().cache.len());
-    // dbg!(part1 / (num))
-    Some((part1, 0))
+    Some(ans)
+}
+
+pub fn solve(input: &str) -> Option<(u64, u64)> {
+    Some((depth_solve(input, 2)?, depth_solve(input, 25)?))
 }
 
 #[cfg(test)]
