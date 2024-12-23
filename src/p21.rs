@@ -67,15 +67,15 @@ impl NumPad {
         }
     }
     fn next_number(&mut self, goal: u8) -> u64 {
-        dbg!(goal);
+        // dbg!(goal);
         let paths = self.iterate_paths(self.location, goal);
         let mut best_cost = usize::MAX;
-        dbg!(paths.len());
+        // dbg!(paths.len());
         for path in paths {
             let p = self.parent.walk(path);
             if p.absolute_path.len() < best_cost {
                 best_cost = p.absolute_path.len();
-                dbg!(&p);
+                // dbg!(&p);
             }
         }
         self.location = goal;
@@ -110,6 +110,7 @@ impl CacheKey {
     }
 }
 
+#[derive(Clone)]
 struct CacheState {
     data: Vec<PadVal>,
     absolute_path: Vec<PadVal>,
@@ -212,7 +213,7 @@ fn get_steps(st: (usize, usize), end: (usize, usize)) -> Vec<PadVal> {
     steps
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct DirPad {
     data: [[PadVal; 3]; 2],
     lookup: [(usize, usize); 6],
@@ -266,7 +267,7 @@ impl DirPad {
         }
         let all_paths = self.iterate_paths(st, end);
         let mut best_path = CacheState::default();
-        let mut min_cost = 1_000_000;
+        let mut min_cost = usize::MAX;
         for path in all_paths {
             if let Some(parent) = self.parent.as_mut() {
                 let check = parent.walk(path);
@@ -285,12 +286,16 @@ impl DirPad {
     }
 }
 
+fn build_numpad(depth: usize) -> NumPad {
+    let mut root = DirPad::new(None);
+    for _ in 0..depth - 1 {
+        root = DirPad::new(Some(Box::new(root)));
+    }
+    NumPad::new(root)
+}
+
 pub fn solve(input: &str) -> Option<(u64, u64)> {
-    let root = DirPad::new(None);
-    let subroot = DirPad::new(Some(Box::new(root)));
-    let subsubroot = DirPad::new(Some(Box::new(subroot)));
-    // let subsubsubroot = DirPad::new(Some(Box::new(subsubroot)));
-    let mut numpad = NumPad::new(subsubroot);
+    let mut numpad = build_numpad(2);
     let mut part1 = 0;
     for line in input.lines() {
         let seq = line.chars().map(|x| x.to_digit(16).unwrap() as u8);
@@ -304,12 +309,16 @@ pub fn solve(input: &str) -> Option<(u64, u64)> {
         part1 += cost * numeric_num;
         numpad.reset();
     }
+    dbg!(&numpad.parent.cache.len());
+    dbg!(&numpad.parent.cache);
+    // dbg!(&numpad.parent.parent.unwrap().parent.unwrap().cache.len());
+    // dbg!(part1 / (num))
     Some((part1, 0))
 }
 
 #[cfg(test)]
 mod tests {
-    static INPUT: &'static str = include_str!("../input/small.txt");
+    static INPUT: &'static str = include_str!("../input/p21.txt");
     #[test]
     fn day21_solve() {
         dbg!(super::solve(INPUT));
